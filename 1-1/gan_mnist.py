@@ -14,31 +14,14 @@ train_ds = datasets.MNIST(root='./data',
                           download=True,
                           transform=transform)
 
-# Build dataloader
+#Build dataloader
 dl = DataLoader(dataset=train_ds,
                 shuffle=True,
                 batch_size=64, num_workers=4)
 
-## ----------------------------------------------------------------------------
-## Visualise a sample batch
-## ----------------------------------------------------------------------------
+#Visualize batch
 
 def display_images(images, n_cols=4, figsize=(12, 6)):
-    """
-    Utility function to display a collection of images in a grid
-    
-    Parameters
-    ----------
-    images: Tensor
-            tensor of shape (batch_size, channel, height, width)
-            containing images to be displayed
-    n_cols: int
-            number of columns in the grid
-            
-    Returns
-    -------
-    None
-    """
     plt.style.use('ggplot')
     n_images = len(images)
     n_rows = math.ceil(n_images / n_cols)
@@ -97,7 +80,6 @@ class Generator(nn.Module):
         self.out_features = out_features
         
         # Generator will up-sample the input producing input of size
-        # suitable for feeding into discriminator
         self.fc1 = nn.Linear(in_features=in_features, out_features=32)
         self.relu1 = nn.LeakyReLU(negative_slope=0.2)
         self.fc2 = nn.Linear(in_features=32, out_features=64)
@@ -126,18 +108,6 @@ class Generator(nn.Module):
         return tanh_out
 
 def real_loss(predicted_outputs, loss_fn, device):
-    """
-    Function for calculating loss when samples are drawn from real dataset
-    
-    Parameters
-    ----------
-    predicted_outputs: Tensor
-                       predicted logits
-            
-    Returns
-    -------
-    real_loss: int
-    """
     batch_size = predicted_outputs.shape[0]
     # Targets are set to 1 here because we expect prediction to be 
     # 1 (or near 1) since samples are drawn from real dataset
@@ -148,18 +118,6 @@ def real_loss(predicted_outputs, loss_fn, device):
 
 
 def fake_loss(predicted_outputs, loss_fn, device):
-    """
-    Function for calculating loss when samples are generated fake samples
-    
-    Parameters
-    ----------
-    predicted_outputs: Tensor
-                       predicted logits
-            
-    Returns
-    -------
-    fake_loss: int
-    """
     batch_size = predicted_outputs.shape[0]
     # Targets are set to 0 here because we expect prediction to be 
     # 0 (or near 0) since samples are generated fake samples
@@ -168,15 +126,7 @@ def fake_loss(predicted_outputs, loss_fn, device):
     
     return fake_loss 
 
-# Training loop function
-
 def train_minst_gan(d, g, d_optim, g_optim, loss_fn, dl, n_epochs, device, verbose=False):
-    print(f'Training on [{device}]...')
-    
-    # Generate a batch (say 16) of latent image vector (z) of fixed size 
-    # (say 100 pix) to be as input to the Generator after each epoch of 
-    # training to generate a fake image. We'll visualise these fake images
-    # to get a sense how generator improves as training progresses
     z_size = 100
     fixed_z = np.random.uniform(-1, 1, size=(16, z_size))
     fixed_z = torch.from_numpy(fixed_z).float().to(device)          
@@ -238,12 +188,6 @@ def train_minst_gan(d, g, d_optim, g_optim, loss_fn, dl, n_epochs, device, verbo
             d_optim.step()
             # Save discriminator batch loss
             d_running_batch_loss += d_loss
-            
-            ## ----------------------------------------------------------------
-            ## Train generator, compute the generator loss which is a measure
-            ## of how successful the generator is in tricking the discriminator 
-            ## and finally back-propogate generator loss
-            ## ----------------------------------------------------------------
 
             # Reset gradients
             g_optim.zero_grad()
@@ -284,14 +228,10 @@ def train_minst_gan(d, g, d_optim, g_optim, loss_fn, dl, n_epochs, device, verbo
         fixed_samples.append(g(fixed_z).detach().cpu())
         
     # Finally write generated fake images from fixed latent vector to disk
-    with open('fixed_samples.pkl', 'wb') as f:
+    with open('samples.pkl', 'wb') as f:
         pkl.dump(fixed_samples, f)
      
     return d_losses, g_losses
-
-##
-## Prepare and start training
-##
 
 # Instantiate Discriminator and Generator
 d = Discriminator(in_features=784, out_features=1)
@@ -333,7 +273,7 @@ plt.show()
 
 def show_generated_images(epoch, n_cols=8):
     # load saved images
-    with open('fixed_samples.pkl', 'rb') as f:
+    with open('samples.pkl', 'rb') as f:
         saved_data = pkl.load(f)  
     epoch_data = saved_data[epoch-1]
     # re-scale back to 0-1 
