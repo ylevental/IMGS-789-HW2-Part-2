@@ -152,18 +152,9 @@ def train_minst_gan(d, g, d_optim, g_optim, loss_fn, dl, n_epochs, device, verbo
             # Move input batch to available device
             real_images = real_images.to(device)
             
-            ## ----------------------------------------------------------------
-            ## Train discriminator using real and then fake MNIST images,  
-            ## then compute the total-loss and back-propogate the total-loss
-            ## ----------------------------------------------------------------
-            
             # Reset gradients
             d_optim.zero_grad()
-            
-            # Real MNIST images
-            # Convert real_images value range of 0 to 1 to -1 to 1
-            # this is required because latter discriminator would be required 
-            # to consume generator's 'tanh' output which is of range -1 to 1
+
             real_images = (real_images * 2) - 1  
             d_real_logits_out = d(real_images)
             d_real_loss = real_loss(d_real_logits_out, loss_fn, device)
@@ -196,9 +187,7 @@ def train_minst_gan(d, g, d_optim, g_optim, loss_fn, dl, n_epochs, device, verbo
             #z = torch.rand(size=(dl.batch_size, z_size)).to(device)
             z = np.random.uniform(-1, 1, size=(dl.batch_size, z_size))
             z = torch.from_numpy(z).float().to(device)       
-            # Generate a batch of fake images, feed them to discriminator
-            # and compute the generator loss as real_loss 
-            # (i.e. target label = 1)
+
             fake_images = g(z) 
             g_logits_out = d(fake_images)
             g_loss = real_loss(g_logits_out, loss_fn, device)
@@ -257,19 +246,11 @@ d_losses, g_losses = train_minst_gan(d, g, d_optim, g_optim,
                                      loss_fn, dl, n_epochs, device,
                                      verbose=False)
 
-##
-## Visualize training losses
-##
 plt.plot(d_losses, label='Discriminator')
 plt.plot(g_losses, label='Generator')
 plt.legend()
 plt.show()
 
-
-
-##
-## Visualize image generation improvements
-##
 
 def show_generated_images(epoch, n_cols=8):
     # load saved images
