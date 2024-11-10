@@ -8,20 +8,10 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
 
-##
-# Download the dataset
-##
-
 ds = datasets.CIFAR10(root='cifar10',
                    download=True,
                    transform=transforms.ToTensor())
 print(ds)
-
-
-
-##
-# Prepare dataloader
-##
 
 dl =  DataLoader(ds, 
                  batch_size=128,
@@ -30,9 +20,6 @@ dl =  DataLoader(ds,
 print(f'Batch size: {dl.batch_size}')
 print(f'Number of batches: {len(dl)}')
 
-##
-# Function for diaplaying batch of images in a grid
-##
 
 def display_images(images, labels=None, n_cols=8, figsize=(12, 6)):
     n_images = images.shape[0]
@@ -51,10 +38,6 @@ def display_images(images, labels=None, n_cols=8, figsize=(12, 6)):
         ax.set_yticks([])
     plt.tight_layout()
     plt.show()
-
-##
-# Display one batch of images
-##
 
 data_batch = next(iter(dl))
 display_images(images=data_batch[0][:32], labels=data_batch[1], figsize=(12, 8))
@@ -190,10 +173,7 @@ def train_svhn_dcgan(discriminator, generator, d_optim, g_optim, device, n_epoch
             # Compute loss for real images
             d_real_loss = real_loss(d_logits_real, device)
 
-            ##
-            ## Train discriminator with fake generated images 
-            ##
-            # Generate latent vector and move to available device
+            #Discriminator
             z = np.random.uniform(-1, 1, (dl.batch_size, z_size))
             z = torch.from_numpy(z).float().to(device)
             # Generate fake images
@@ -211,10 +191,8 @@ def train_svhn_dcgan(discriminator, generator, d_optim, g_optim, device, n_epoch
             # Keep track of running total batch loss
             d_epoch_loss += d_loss.detach().cpu()
 
-            ##
-            ## Train the generator 
-            ##        
-            # Reset generator's gradients
+            #Generator     
+            #Reset generator's gradients
             g_optim.zero_grad()
             # Generate latent vector and move to available device
             z = np.random.uniform(-1, 1, (dl.batch_size, z_size))
@@ -236,39 +214,19 @@ def train_svhn_dcgan(discriminator, generator, d_optim, g_optim, device, n_epoch
                 g_losses.append(g_loss)
                 print(f'Epoch [{epoch+1:3d}/{n_epochs:3d}] batch = {curr_batch}: d_loss = {d_loss:.6f}, g_loss = {g_loss:.6f}')
 
-        ##
-        # Generate fake images using fixed latent vector for each epoch
-        ##
         generator.eval()
         z = np.random.uniform(-1, 1, (dl.batch_size, z_size))
         z = torch.from_numpy(z).float().to(device)
         fake_images =  generator(z)
         fixed_samples.append(fake_images.detach().cpu())
         
-        ##
-        # Compute average epoch loss and keep track
-        ##
         d_epoch_loss = d_epoch_loss/len(dl)
         g_epoch_loss = g_epoch_loss/len(dl)
-        #d_losses.append(d_epoch_loss)
-        #g_losses.append(g_epoch_loss)
-        
-        ##
-        # Print training statistics for each epoch
-        ##
-        #print(f'Epoch [{epoch+1:3d}/{n_epochs:3d}]: d_loss = {d_epoch_loss:.6f}, g_loss = {g_epoch_loss:.6f}')
-        
-    ##
-    ## Save generated fixed images to disk for latter viewing
-    ##
-    with open('fixed_generated_samples.pkl', 'wb') as f:
+
+    with open('fixed_samples.pkl', 'wb') as f:
         pkl.dump(fixed_samples, f)
 
     return d_losses, g_losses
-
-##
-# Instantiate models
-##
 
 discriminator = Discriminator()
 generator = Generator()
@@ -278,30 +236,11 @@ print(discriminator)
 print()
 print(generator)
 
-##
-# Define optimizers
-##
+
 d_optim = optim.Adam(discriminator.parameters(), lr=0.0002, betas=[0.5, 0.999])
 g_optim = optim.Adam(generator.parameters(), lr=0.0002, betas=[0.5, 0.999])
 
-'''
-##
-# Train
-##
-device = 'cuda' if torch.cuda.is_available() else 'cpu'
-n_epochs = 25
-d_losses, g_losses = train_svhn_dcgan(discriminator, 
-                                      generator, 
-                                      d_optim, 
-                                      g_optim,
-                                      device,
-                                      n_epochs=n_epochs)
-'''
-
-##
-# Load images generated samples during training and visualize
-##
-with open('fixed_generated_samples.pkl', 'rb') as f:
+with open('fixed_samples.pkl', 'rb') as f:
     samples = pkl.load(f)
 
 epoch = 25
