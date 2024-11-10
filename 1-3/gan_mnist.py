@@ -19,26 +19,7 @@ dl = DataLoader(dataset=train_ds,
                 shuffle=True,
                 batch_size=64, num_workers=4)
 
-## ----------------------------------------------------------------------------
-## Visualise a sample batch
-## ----------------------------------------------------------------------------
-
 def display_images(images, n_cols=4, figsize=(12, 6)):
-    """
-    Utility function to display a collection of images in a grid
-    
-    Parameters
-    ----------
-    images: Tensor
-            tensor of shape (batch_size, channel, height, width)
-            containing images to be displayed
-    n_cols: int
-            number of columns in the grid
-            
-    Returns
-    -------
-    None
-    """
     plt.style.use('ggplot')
     n_images = len(images)
     n_rows = math.ceil(n_images / n_cols)
@@ -126,18 +107,6 @@ class Generator(nn.Module):
         return tanh_out
 
 def real_loss(predicted_outputs, loss_fn, device):
-    """
-    Function for calculating loss when samples are drawn from real dataset
-    
-    Parameters
-    ----------
-    predicted_outputs: Tensor
-                       predicted logits
-            
-    Returns
-    -------
-    real_loss: int
-    """
     batch_size = predicted_outputs.shape[0]
     # Targets are set to 1 here because we expect prediction to be 
     # 1 (or near 1) since samples are drawn from real dataset
@@ -148,18 +117,6 @@ def real_loss(predicted_outputs, loss_fn, device):
 
 
 def fake_loss(predicted_outputs, loss_fn, device):
-    """
-    Function for calculating loss when samples are generated fake samples
-    
-    Parameters
-    ----------
-    predicted_outputs: Tensor
-                       predicted logits
-            
-    Returns
-    -------
-    fake_loss: int
-    """
     batch_size = predicted_outputs.shape[0]
     # Targets are set to 0 here because we expect prediction to be 
     # 0 (or near 0) since samples are generated fake samples
@@ -168,15 +125,11 @@ def fake_loss(predicted_outputs, loss_fn, device):
     
     return fake_loss 
 
-# Training loop function
+#Training loop function
 
 def train_minst_gan(d, g, d_optim, g_optim, loss_fn, dl, n_epochs, device, verbose=False):
     print(f'Training on [{device}]...')
     
-    # Generate a batch (say 16) of latent image vector (z) of fixed size 
-    # (say 100 pix) to be as input to the Generator after each epoch of 
-    # training to generate a fake image. We'll visualise these fake images
-    # to get a sense how generator improves as training progresses
     z_size = 100
     fixed_z = np.random.uniform(-1, 1, size=(16, z_size))
     fixed_z = torch.from_numpy(fixed_z).float().to(device)          
@@ -202,18 +155,10 @@ def train_minst_gan(d, g, d_optim, g_optim, loss_fn, dl, n_epochs, device, verbo
             # Move input batch to available device
             real_images = real_images.to(device)
             
-            ## ----------------------------------------------------------------
-            ## Train discriminator using real and then fake MNIST images,  
-            ## then compute the total-loss and back-propogate the total-loss
-            ## ----------------------------------------------------------------
             
             # Reset gradients
             d_optim.zero_grad()
-            
-            # Real MNIST images
-            # Convert real_images value range of 0 to 1 to -1 to 1
-            # this is required because latter discriminator would be required 
-            # to consume generator's 'tanh' output which is of range -1 to 1
+
             real_images = (real_images * 2) - 1  
             d_real_logits_out = d(real_images)
             d_real_loss = real_loss(d_real_logits_out, loss_fn, device)
@@ -238,12 +183,6 @@ def train_minst_gan(d, g, d_optim, g_optim, loss_fn, dl, n_epochs, device, verbo
             d_optim.step()
             # Save discriminator batch loss
             d_running_batch_loss += d_loss
-            
-            ## ----------------------------------------------------------------
-            ## Train generator, compute the generator loss which is a measure
-            ## of how successful the generator is in tricking the discriminator 
-            ## and finally back-propogate generator loss
-            ## ----------------------------------------------------------------
 
             # Reset gradients
             g_optim.zero_grad()
@@ -252,9 +191,7 @@ def train_minst_gan(d, g, d_optim, g_optim, loss_fn, dl, n_epochs, device, verbo
             #z = torch.rand(size=(dl.batch_size, z_size)).to(device)
             z = np.random.uniform(-1, 1, size=(dl.batch_size, z_size))
             z = torch.from_numpy(z).float().to(device)       
-            # Generate a batch of fake images, feed them to discriminator
-            # and compute the generator loss as real_loss 
-            # (i.e. target label = 1)
+
             fake_images = g(z) 
             g_logits_out = d(fake_images)
             g_loss = real_loss(g_logits_out, loss_fn, device)
@@ -288,11 +225,6 @@ def train_minst_gan(d, g, d_optim, g_optim, loss_fn, dl, n_epochs, device, verbo
         pkl.dump(fixed_samples, f)
      
     return d_losses, g_losses
-
-
-##
-## Visualize image generation improvements
-##
 
 with open('fixed_samples.pkl', 'rb') as f:
     saved_data = pkl.load(f)  
